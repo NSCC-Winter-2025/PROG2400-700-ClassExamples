@@ -5,6 +5,6 @@ set(CMAKE_CXX_STANDARD 23)
 
 set(CMAKE_CXX_FLAGS "-static")
 
-add_executable(best_practices src/main.cpp
-        src/best_practices_app.cpp
-        src/best_practices.cpp)
+add_executable(best_practices main.cpp
+        best_practices_app.cpp
+        best_practices.cpp)
