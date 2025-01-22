@@ -35,6 +35,74 @@ public:
         }
     }
 
+    ///
+    /// @param data the data to be inserted
+    /// @param before_value the value of the node to insert before
+    void insert(int data, int before_value) {
+        auto new_node = new Node({data});
+
+        auto node = _start;
+        auto prev = static_cast<Node*>(nullptr);
+
+        // find the node to insert before
+        while (node != nullptr) {
+            // look for value to insert before
+            if (node->_data == before_value) {
+                break;
+            }
+            prev = node;
+            node = node->_next;
+        }
+
+        // did we find our node?
+        if (node != nullptr) {
+            // are we inserting at the beginning?
+            if (prev == nullptr) {
+                // yes! we are at the start
+                new_node->_next = _start;
+                _start = new_node;
+            }
+            else {
+                // no, just in the middle
+                new_node->_next = prev->_next;
+                prev->_next = new_node;
+            }
+        }
+    }
+
+    void remove(const int data) {
+        auto prev = static_cast<Node*>(nullptr);
+        auto node = _start;
+
+        // find the node to delete
+        while (node != nullptr) {
+            // look for the node with a particular value
+            if (node->_data == data) {
+                // we found the node!
+                break;
+            }
+            prev = node;
+            node = node->_next;
+        }
+
+        // did we find the node to delete?
+        if (node != nullptr) {
+            // yes! we did find the node!
+
+            // is this node the first node?
+            if (prev == nullptr) {
+                // yes! it is the first node!
+                _start = node->_next;
+            }
+            else {
+                // no, it isn't.
+                prev->_next = node->_next;
+            }
+
+            delete node;
+        }
+    }
+
     friend std::ostream& operator<<(std::ostream& output, const LinkedList& list);
 };
 
@@ -60,6 +128,46 @@ int main() {
 
     std::cout << "Test 1: add some data" << std::endl;
     std::cout << "---------------------" << std::endl;
+
+    std::cout << list << std::endl;
+
+    std::cout << "Test 2: delete a node at the end" << std::endl;
+    std::cout << "--------------------------------" << std::endl;
+
+    // delete the node that contains the value 5
+    list.remove(5);
+
+    std::cout << list << std::endl;
+
+    std::cout << "Test 3: delete a node in the middle" << std::endl;
+    std::cout << "-----------------------------------" << std::endl;
+
+    // delete the node that contains the value 3
+    list.remove(3);
+
+    std::cout << list << std::endl;
+
+    std::cout << "Test 4: delete a node at the start" << std::endl;
+    std::cout << "----------------------------------" << std::endl;
+
+    // delete the node that contains the value 1
+    list.remove(1);
+
+    std::cout << list << std::endl;
+
+    std::cout << "Test 5: insert a node in the middle" << std::endl;
+    std::cout << "-----------------------------------" << std::endl;
+
+    // insert the value 3 before the node that contains the value 4
+    list.insert(3, 4);
+
+    std::cout << list << std::endl;
+
+    std::cout << "Test 6: insert a node at the start" << std::endl;
+    std::cout << "----------------------------------" << std::endl;
+
+    // insert the value 1 before the node that contains the value 2
+    list.insert(1, 2);
 
     std::cout << list << std::endl;
 
