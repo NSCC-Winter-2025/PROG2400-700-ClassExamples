@@ -9,6 +9,26 @@ class LinkedList {
     Node* _start{nullptr};
 
 public:
+    class iterator {
+        Node* _node{nullptr};
+
+    public:
+        explicit iterator(Node* node) : _node(node) {
+        }
+
+        bool operator!=(const iterator& rhs) { return _node != rhs._node; }
+
+        iterator& operator++() {
+            _node = _node->_next;
+            return *this;
+        }
+
+        int operator*() const { return _node->_data; }
+    };
+
+    iterator begin() { return iterator(_start); }
+    iterator end() { return iterator(nullptr); }
+
     void add(int data) {
         auto node = new Node({data});
 
@@ -170,6 +190,30 @@ int main() {
     list.insert(1, 2);
 
     std::cout << list << std::endl;
+
+    std::cout << "Test 7: using old-style iteration" << std::endl;
+    std::cout << "---------------------------------" << std::endl;
+
+    for (auto i = list.begin(); i != list.end(); ++i) {
+        std::cout << *i << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Test 8: using ranged for loop" << std::endl;
+    std::cout << "-----------------------------" << std::endl;
+
+    for (auto n : list) {
+        std::cout << n << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Test 9: using old-style iteration" << std::endl;
+    std::cout << "---------------------------------" << std::endl;
+
+    for (auto i = list.begin() + 2; i != list.end(); ++i) {
+        std::cout << *i << " ";
+    }
+    std::cout << std::endl;
 
     return 0;
 }
