@@ -3,6 +3,8 @@
 #include <chrono>
 #include <random>
 
+#include "binary_search_tree.h"
+
 using clk = std::chrono::high_resolution_clock;
 
 void track_time(auto desc, void (*f)(std::span<int>), std::span<int> arr) {
@@ -80,6 +82,82 @@ void insertion_sort(std::span<int> arr) {
     }
 }
 
+void shell_sort(std::span<int> arr) {
+    // create gaps, starting with half the array size
+    for (auto gap = arr.size() / 2; gap > 0; gap /= 2) {
+        // select the starting element to sort with
+        for (auto start = 0; start < gap; start++) {
+            // apply the insertion sort on sub-array
+            for (auto i = start + gap; i < arr.size(); i += gap) {
+                // pull out the card to examine
+                auto temp = arr[i];
+
+                // shuffle any elements greater than the number to the right
+                // to make room for the insertion
+                auto j = i;
+                for (; j >= gap && temp < arr[j - gap]; j -= gap) {
+                    arr[j] = arr[j - gap];
+                }
+
+                // perform the insertion
+                arr[j] = temp;
+            }
+        }
+    }
+}
+
+auto split(std::span<int> arr) {
+    // choose the pivot point
+    auto pivot = arr[0];
+
+    // start searching for numbers less than and greater than the pivot
+    auto left = 0;
+    auto right = arr.size() - 1;
+
+    while (left < right) {
+        // search for element less than the pivot
+        while (right > 0 && pivot < arr[right]) right--;
+
+        // search for element greater than the pivot
+        while (left < right && pivot >= arr[left]) left++;
+
+        // if two were found out of place, swap them
+        if (left < right && arr[left] != arr[right]) {
+            std::swap(arr[left], arr[right]);
+        }
+    }
+
+    // now move the pivot point to its location
+    arr[0] = arr[right];
+    arr[right] = pivot;
+
+    return right;
+}
+
+void quick_sort(std::span<int> arr) {
+    // the array is sorted when it only has zero or one element
+    if (arr.size() <= 1) return;
+
+    // split the array into two sublists (left and right)
+    auto pivot = split(arr);
+
+    // sort the left side
+    quick_sort(arr.subspan(0, pivot));
+
+    // sort the right side
+    quick_sort(arr.subspan(pivot + 1, arr.size() - pivot - 1));
+}
+
+void bst_sort(std::span<int> arr) {
+    BST bst;
+
+    for (const auto num : arr) {
+        bst.insert(num);
+    }
+
+    bst.save_array(arr);
+}
+
 int main() {
     for (auto len = 10uz; len <= 10000uz; len *= 10uz) {
         std::cout << "len = " << len << std::endl;
@@ -98,6 +176,15 @@ int main() {
 
         fill_array({nums, len});
         track_time("insertion sort", insertion_sort, {nums, len});
+
+        fill_array({nums, len});
+        track_time("shell sort", shell_sort, {nums, len});
+
+        fill_array({nums, len});
+        track_time("quick sort", quick_sort, {nums, len});
+
+        fill_array({nums, len});
+        track_time("bst sort", bst_sort, {nums, len});
 
         // std::cout << "After sorting" << std::endl;
         // dump_array({nums, len});
