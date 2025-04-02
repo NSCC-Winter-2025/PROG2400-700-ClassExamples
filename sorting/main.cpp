@@ -1,9 +1,9 @@
 #include <iomanip>
 #include <iostream>
 #include <chrono>
+#include <queue>
 #include <random>
-
-#include "binary_search_tree.h"
+#include "sorting.h"
 
 using clk = std::chrono::high_resolution_clock;
 
@@ -38,127 +38,131 @@ bool check_sort(std::span<int> arr) {
     return true;
 }
 
-void bubble_sort(std::span<int> arr) {
-    for (auto i = 0; i < arr.size() - 2; i++) {
-        for (auto j = 0; j < arr.size() - i - 1; j++) {
-            if (arr[j] > arr[j + 1]) {
-                std::swap(arr[j], arr[j + 1]);
+std::ostream& operator<<(std::ostream& os, const std::span<int> arr) {
+    if (arr.empty()) return os;
+    auto i = 0;
+    for (; i < arr.size() - 1; i++) {
+        os << arr[i] << ",";
+    }
+    os << arr[i];
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, std::queue<int> queue) {
+    if (queue.empty()) return os;
+    while (queue.size() > 1) {
+        auto num = queue.front();
+        queue.pop();
+        os << num << ",";
+    }
+    os << queue.front();
+    return os;
+}
+
+void split(std::queue<int>& in, std::queue<int>& out1, std::queue<int>& out2) {
+    auto num_subfiles = 0;
+
+    // keep splitting while there are records to read
+    auto prev = -1;
+    while (!in.empty()) {
+        // read a record
+        auto curr = in.front();
+        in.pop();
+
+        // increase the subfile count when the next record is a decreasing value
+        if (curr < prev) num_subfiles++;
+
+        // write out subfiles in an odds/evens fashion
+        if (num_subfiles % 2 == 0) {
+            out1.push(curr);
+        } else {
+            out2.push(curr);
+        }
+
+        prev = curr;
+    }
+}
+
+bool elements_in_sublist(std::queue<int> first, std::queue<int> second, int last) {
+    return !first.empty() && (first.front() >= last);
+}
+
+bool elements_in_column(std::queue<int> first, std::queue<int> second, int last) {
+    return !first.empty() && (first.front() >= last) &&
+            (second.empty() || (second.front() < last) || (first.front() < second.front()));
+}
+
+bool elements_not_in_current_list(std::queue<int> first, std::queue<int> second, int last) {
+    return first.empty() || !second.empty() &&
+    ((first.front() < last) ||
+        ((first.front() > last) && (second.front() < first.front())));
+}
+
+auto merge(std::queue<int>& out, std::queue<int>& in1, std::queue<int>& in2) {
+    auto num_subfiles = 0;
+
+    // who starts the process?
+    auto& first = in2.empty() || (in1.front() < in2.front()) ? in1 : in2;
+    auto& second = first == in1 ? in2 : in1;
+
+    // keep merging while there are records left to read
+    while (!in1.empty() || !in2.empty()) {
+        auto last = -1;
+        while (elements_in_sublist(first, second, last)) {
+            // take records from file while they are in order
+            do {
+                last = first.front();
+                first.pop();
+                out.push(last);
+            } while (elements_in_column(first, second, last));
+
+            // done taking elements, now switch to other file
+            if (elements_not_in_current_list(first, second, last)) {
+                std::swap(first, second);
             }
         }
+
+        // move to next sublist
+        num_subfiles++;
+    }
+
+    return num_subfiles;
+}
+
+void merge_sort(std::span<int> arr) {
+    // copy array to queue (think of a queue as a file)
+    std::queue<int> merged;
+    for (auto num : arr) {
+        merged.push(num);
+    }
+
+    // sort done here
+    std::queue<int> split1, split2;
+    auto subfiles = 0;
+    do {
+        split(merged, split1, split2);
+
+        std::cout << "Split" << std::endl;
+        std::cout << split1 << std::endl;
+        std::cout << split2 << std::endl;
+
+        subfiles = merge(merged, split1, split2);
+
+        std::cout << "Merge" << std::endl;
+        std::cout << merged << std::endl;
+    } while (subfiles != 1);
+
+    // copy queue back to array
+    auto i = 0;
+    while (!merged.empty()) {
+        arr[i++] = merged.front();
+        merged.pop();
     }
 }
 
-void selection_sort(std::span<int> arr) {
-    for (auto i = 0; i < arr.size() - 1; i++) {
-        // find the smallest number
-        auto lowest = i;
-        for (auto j = i + 1; j < arr.size(); j++) {
-            if (arr[j] < arr[lowest]) {
-                lowest = j;
-            }
-        }
-
-        // put the lowest in the correct position
-        if (arr[lowest] < arr[i]) {
-            std::swap(arr[lowest], arr[i]);
-        }
-    }
-}
-
-void insertion_sort(std::span<int> arr) {
-    for (auto i = 1; i < arr.size(); i++) {
-        // pull out the card to examine
-        auto temp = arr[i];
-
-        // shuffle any elements greater than the number to the right
-        // to make room for the insertion
-        auto j = i;
-        for (; j > 0 && temp < arr[j - 1]; j--) {
-            arr[j] = arr[j - 1];
-        }
-
-        // perform the insertion
-        arr[j] = temp;
-    }
-}
-
-void shell_sort(std::span<int> arr) {
-    // create gaps, starting with half the array size
-    for (auto gap = arr.size() / 2; gap > 0; gap /= 2) {
-        // select the starting element to sort with
-        for (auto start = 0; start < gap; start++) {
-            // apply the insertion sort on sub-array
-            for (auto i = start + gap; i < arr.size(); i += gap) {
-                // pull out the card to examine
-                auto temp = arr[i];
-
-                // shuffle any elements greater than the number to the right
-                // to make room for the insertion
-                auto j = i;
-                for (; j >= gap && temp < arr[j - gap]; j -= gap) {
-                    arr[j] = arr[j - gap];
-                }
-
-                // perform the insertion
-                arr[j] = temp;
-            }
-        }
-    }
-}
-
-auto split(std::span<int> arr) {
-    // choose the pivot point
-    auto pivot = arr[0];
-
-    // start searching for numbers less than and greater than the pivot
-    auto left = 0;
-    auto right = arr.size() - 1;
-
-    while (left < right) {
-        // search for element less than the pivot
-        while (right > 0 && pivot < arr[right]) right--;
-
-        // search for element greater than the pivot
-        while (left < right && pivot >= arr[left]) left++;
-
-        // if two were found out of place, swap them
-        if (left < right && arr[left] != arr[right]) {
-            std::swap(arr[left], arr[right]);
-        }
-    }
-
-    // now move the pivot point to its location
-    arr[0] = arr[right];
-    arr[right] = pivot;
-
-    return right;
-}
-
-void quick_sort(std::span<int> arr) {
-    // the array is sorted when it only has zero or one element
-    if (arr.size() <= 1) return;
-
-    // split the array into two sublists (left and right)
-    auto pivot = split(arr);
-
-    // sort the left side
-    quick_sort(arr.subspan(0, pivot));
-
-    // sort the right side
-    quick_sort(arr.subspan(pivot + 1, arr.size() - pivot - 1));
-}
-
-void bst_sort(std::span<int> arr) {
-    BST bst;
-
-    for (const auto num : arr) {
-        bst.insert(num);
-    }
-
-    bst.save_array(arr);
-}
 
 int main() {
+#if 0
     for (auto len = 10uz; len <= 10000uz; len *= 10uz) {
         std::cout << "len = " << len << std::endl;
 
@@ -196,6 +200,17 @@ int main() {
 
         delete [] nums;
     }
+#endif
+
+    auto array = std::to_array({3, 6, 8, 10, 5, 9, 4, 1, 2, 7});
+
+    std::cout << "Unsorted Array" << std::endl;
+    std::cout << array << std::endl;
+
+    merge_sort(array);
+
+    std::cout << "Sorted Array" << std::endl;
+    std::cout << array << std::endl;
 
     return 0;
 }
